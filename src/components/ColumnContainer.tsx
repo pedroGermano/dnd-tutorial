@@ -2,35 +2,63 @@ import { useSortable } from "@dnd-kit/sortable";
 import type { Column, Id } from "../types";
 import { CSS } from "@dnd-kit/utilities";
 import Trash from "./icons/Trash";
+import { useState } from "react";
 
 interface Props {
   column: Column;
   deleteColumn: (id: Id) => void;
+  updateColumn: (id: Id, title: string) => void;
 }
 
 export function ColumnContainer(props: Props) {
-  const { column, deleteColumn } = props;
+  const { column, deleteColumn, updateColumn } = props;
+  const [editMode, setEditMode] = useState(false);
 
-  const { setNodeRef, attributes, listeners, transform, transition } =
-    useSortable({
-      id: column.id,
-      data: {
-        type: "Column",
-        column,
-      },
-    });
+  const {
+    setNodeRef,
+    attributes,
+    listeners,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: column.id,
+    data: {
+      type: "Column",
+      column,
+    },
+    disabled: editMode,
+  });
 
   const style = {
     transition,
     transform: CSS.Transform.toString(transform),
   };
 
+  if (isDragging) {
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="bg-columnBackgroundColor w-[350px] h-[500px] max-h-[500px] 
+        rounded-md border-2 opacity-40 border-rose-500 flex flex-col"
+      ></div>
+    );
+  }
+
   return (
     <div
+      ref={setNodeRef}
+      style={style}
       className="bg-columnBackgroundColor w-[350px] h-[500px] max-h-[500px] 
-    rounded-md flex flex-col"
+      rounded-md flex flex-col"
     >
       <div
+        {...attributes}
+        {...listeners}
+        onClick={() => {
+          setEditMode(true);
+        }}
         className="bg-mainBackgroundColor text-md h-[60px]
        cursor-grab rounded-md rounded-b-none p-3 font-bold 
        border-columnBackgroundColor border-4 flex items-center justify-between"
@@ -40,6 +68,20 @@ export function ColumnContainer(props: Props) {
             0
           </div>
           {column.title}
+          {!editMode && column.title}
+          {editMode && (
+            <input
+              className="px-2 bg-black border rounded outline-none focus:border-rose-500"
+              value={column.title}
+              onChange={(e) => updateColumn(column.id, e.target.value)}
+              autoFocus
+              onBlur={() => setEditMode(false)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                setEditMode(false);
+              }}
+            />
+          )}
         </div>
         <button
           onClick={() => {
